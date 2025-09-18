@@ -1,0 +1,43 @@
+name: CD - Deploy Expensy
+
+on:
+  push:
+    branches:
+      - main  # Trigger deployment only when code is pushed to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up kubectl CLI
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: '1.30.0'  # Adjust to your desired kubectl version
+
+      # 3️⃣ Configure access to the Kubernetes cluster
+      # Note: For a local minikube cluster, you'd need a remote-accessible cluster
+      # Here we assume you store the kubeconfig as a GitHub secret
+      - name: Configure Kubeconfig
+        run: |
+          # Save the secret content to a file
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" > $HOME/.kube/config
+
+      # 4️⃣ Deploy all Kubernetes manifests to the devops-expensy namespace
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f K8s/namespace.yaml
+          kubectl apply -f K8s/mongo-deployment.yaml
+          kubectl apply -f K8s/mongo-service.yaml
+          kubectl apply -f K8s/redis-deployment.yaml
+          kubectl apply -f K8s/redis-service.yaml
+          kubectl apply -f K8s/backend-deployment.yaml
+          kubectl apply -f K8s/backend-service.yaml
+          kubectl apply -f K8s/frontend-deployment.yaml
+          kubectl apply -f K8s/frontend-service.yaml
+          kubectl apply -f K8s/expensy_ingress.yaml
