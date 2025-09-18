@@ -33,21 +33,21 @@ jobs:
       # Step 3: Build and push backend Docker image
       - name: Build backend Docker image
         run: |
-          docker build -t $IMAGE_NAME_BACKEND:latest ./expensy_backend
-          docker push $IMAGE_NAME_BACKEND:latest
+          docker build -t $IMAGE_NAME_BACKEND ./expensy_backend
+          docker push $IMAGE_NAME_BACKEND
 
       # Step 4: Build and push frontend Docker image
       - name: Build frontend Docker image
         run: |
-          docker build -t $IMAGE_NAME_FRONTEND:latest ./expensy_frontend
-          docker push $IMAGE_NAME_FRONTEND:latest
+          docker build -t $IMAGE_NAME_FRONTEND ./expensy_frontend
+          docker push $IMAGE_NAME_FRONTEND
 
       # Step 5: Run backend tests (inside container)
       - name: Run backend tests
         run: |
-          docker run --rm $IMAGE_NAME_BACKEND:latest npm test
+          docker run --rm $IMAGE_NAME_BACKEND npm test
 
       # Step 6: Run frontend tests (inside container)
       - name: Run frontend tests
         run: |
-          docker run --rm $IMAGE_NAME_FRONTEND:latest npm test
+          docker run --rm $IMAGE_NAME_FRONTEND npm test
