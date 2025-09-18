@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    # healthcheck:
+    #   test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 10s
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+       - "6379:6379"
+    # healthcheck:
+    #   test: ["CMD", "redis-cli", "ping"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 10s
+
+  backend:
+    build:
+      context: ./expensy_backend
+      dockerfile: dockerfile.backend
+    container_name: expensy_backend
+    restart: always
+    #depends_on:
+      # mongo:
+      #   condition: service_healthy
+      # redis:
+      #   condition: service_healthy
+    ports:
+      - "8706:8706"
+    environment:
+      PORT: 8706
+      DATABASE_URI: mongodb://root:example@mongo:27017/expensy?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: someredispassword
+
+  frontend:
+    build:
+      context: ./expensy_frontend
+      dockerfile: dockerfile.frontend
+    container_name: expensy_frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8706

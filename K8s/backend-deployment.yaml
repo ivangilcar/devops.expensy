@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: devops-expensy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: 160180/devopsexpensy_backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8706
+          env:
+            - name: DATABASE_URI
+              value: "mongodb://root:example@mongo:27017"
+            - name: REDIS_URL
+              value: "redis://:someredispassword@redis:6379"
