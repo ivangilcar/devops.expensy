@@ -113,9 +113,16 @@ jobs:
     - name: Configure K8s context
       run: |
         mkdir -p ~/.kube
-        echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+        # Remove any whitespace and decode
+        echo "${{ secrets.KUBECONFIG }}" | tr -d '[:space:]' | base64 -d > ~/.kube/config
+        # Verify the config was created successfully
+        if [ ! -s ~/.kube/config ]; then
+          echo "Error: kubeconfig file is empty or was not created"
+          exit 1
+        fi
         chmod 600 ~/.kube/config
         kubectl config use-context ${{ secrets.K8S_CONTEXT || 'default' }}
+        kubectl cluster-info
 
     - name: Deploy Backend
       run: |
