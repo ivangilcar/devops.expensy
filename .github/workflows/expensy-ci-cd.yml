@@ -17,89 +17,89 @@ env:
   K8S_NAMESPACE: devops-expensy
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    # Backend Build - Diogo Test
-    - name: Install backend dependencies
-      run: |
-        cd expensy_backend
-        npm ci --only=production
-
-    # Frontend Build
-    - name: Install frontend dependencies
-      run: |
-        cd expensy_frontend
-        npm ci --only=production
-
-  # test:
+  # build:
   #   runs-on: ubuntu-latest
-  #   needs: build
   #   steps:
   #   - name: Checkout code
   #     uses: actions/checkout@v4
 
-  #   - name: Install backend dev dependencies
+  #   # Backend Build - Diogo Test
+  #   - name: Install backend dependencies
   #     run: |
   #       cd expensy_backend
-  #       npm ci
+  #       npm ci --only=production
 
-  #   - name: Run backend tests
-  #     run: |
-  #       cd expensy_backend
-  #       npm test --if-present
-
-  #   - name: Install frontend dev dependencies
+  #   # Frontend Build
+  #   - name: Install frontend dependencies
   #     run: |
   #       cd expensy_frontend
-  #       npm ci
+  #       npm ci --only=production
 
-  #   - name: Run frontend tests
+  # # test:
+  # #   runs-on: ubuntu-latest
+  # #   needs: build
+  # #   steps:
+  # #   - name: Checkout code
+  # #     uses: actions/checkout@v4
+
+  # #   - name: Install backend dev dependencies
+  # #     run: |
+  # #       cd expensy_backend
+  # #       npm ci
+
+  # #   - name: Run backend tests
+  # #     run: |
+  # #       cd expensy_backend
+  # #       npm test --if-present
+
+  # #   - name: Install frontend dev dependencies
+  # #     run: |
+  # #       cd expensy_frontend
+  # #       npm ci
+
+  # #   - name: Run frontend tests
+  # #     run: |
+  # #       cd expensy_frontend
+  # #       npm test --if-present
+
+  # docker:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   outputs:
+  #     backend_tag: ${{ steps.meta.outputs.backend_tag }}
+  #     frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
+
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+
+  #   - name: Log in to Docker Hub
+  #     uses: docker/login-action@v3
+  #     with:
+  #       username: ${{ secrets.DOCKER_HUB_USERNAME }}
+  #       password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+  #   - name: Define image tags
+  #     id: meta
   #     run: |
-  #       cd expensy_frontend
-  #       npm test --if-present
+  #       echo "backend_tag=${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+  #       echo "frontend_tag=${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-  docker:
-    runs-on: ubuntu-latest
-    needs: build
-    outputs:
-      backend_tag: ${{ steps.meta.outputs.backend_tag }}
-      frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
+  #   - name: Build & Push Backend
+  #     run: |
+  #       docker build -t ${{ steps.meta.outputs.backend_tag }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest ./expensy_backend
+  #       docker push ${{ steps.meta.outputs.backend_tag }}
+  #       docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-    - name: Define image tags
-      id: meta
-      run: |
-        echo "backend_tag=${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-        echo "frontend_tag=${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-
-    - name: Build & Push Backend
-      run: |
-        docker build -t ${{ steps.meta.outputs.backend_tag }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest ./expensy_backend
-        docker push ${{ steps.meta.outputs.backend_tag }}
-        docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
-
-    - name: Build & Push Frontend
-      run: |
-        docker build -t ${{ steps.meta.outputs.frontend_tag }} -t ${{ env.IMAGE_NAME_FRONTEND }}:latest ./expensy_frontend
-        docker push ${{ steps.meta.outputs.frontend_tag }}
-        docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
+  #   - name: Build & Push Frontend
+  #     run: |
+  #       docker build -t ${{ steps.meta.outputs.frontend_tag }} -t ${{ env.IMAGE_NAME_FRONTEND }}:latest ./expensy_frontend
+  #       docker push ${{ steps.meta.outputs.frontend_tag }}
+  #       docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
 
   deploy:
     runs-on: ubuntu-latest
-    needs: docker
+    #needs: docker
     
     steps:
     - name: Checkout code
@@ -110,17 +110,38 @@ jobs:
       with:
         version: 'latest'
 
-    - name: Configure K8s context
+    - name: Install Azure CLI
       run: |
-        mkdir -p ~/.kube
-        # Remove any whitespace and decode
-        echo "${{ secrets.KUBECONFIG }}" | tr -d '[:space:]' | base64 -d > ~/.kube/config
-        # Verify the config was created successfully
-        if [ ! -s ~/.kube/config ]; then
-          echo "Error: kubeconfig file is empty or was not created"
-          exit 1
-        fi
-        chmod 600 ~/.kube/config
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+    - name: Log in to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Configure AKS context
+      run: |
+        az aks get-credentials \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+          --name ${{ secrets.AKS_CLUSTER_NAME }} \
+          --overwrite-existing
+
+    - name: Verify cluster access
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+
+    # - name: Configure K8s context
+    #   run: |
+    #     mkdir -p ~/.kube
+    #     # Remove any whitespace and decode
+    #     echo "${{ secrets.KUBECONFIG }}" | tr -d '[:space:]' | base64 -d > ~/.kube/config
+    #     # Verify the config was created successfully
+    #     if [ ! -s ~/.kube/config ]; then
+    #       echo "Error: kubeconfig file is empty or was not created"
+    #       exit 1
+    #     fi
+    #     chmod 600 ~/.kube/config
 
     - name: Deploy Backend
       run: |
