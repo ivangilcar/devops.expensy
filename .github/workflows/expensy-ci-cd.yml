@@ -127,33 +127,19 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    # - name: Configure K8s context
-    #   run: |
-    #     mkdir -p ~/.kube
-    #     # Remove any whitespace and decode
-    #     echo "${{ secrets.KUBECONFIG }}" | tr -d '[:space:]' | base64 -d > ~/.kube/config
-    #     # Verify the config was created successfully
-    #     if [ ! -s ~/.kube/config ]; then
-    #       echo "Error: kubeconfig file is empty or was not created"
-    #       exit 1
-    #     fi
-    #     chmod 600 ~/.kube/config
+    - name: Deploy Backend
+      run: |
+        kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
+        kubectl rollout status deployment/backend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    # kubectl set image deployment/backend-pod backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
-    # - name: Deploy Backend
-    #   run: |
-    #     kubectl set image deployment/backend-pod backend=99 -n ${{ env.K8S_NAMESPACE }}
-    #     kubectl rollout status deployment/backend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+    - name: Deploy Frontend
+      run: |
+        kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
+        kubectl rollout status deployment/frontend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    # # kubectl set image deployment/frontend-pod frontend=${{ needs.docker.outputs.frontend_tag }} -n ${{ env.K8S_NAMESPACE }}
-    # - name: Deploy Frontend
-    #   run: |
-    #     kubectl set image deployment/frontend-pod frontend=99 -n ${{ env.K8S_NAMESPACE }}
-    #     kubectl rollout status deployment/frontend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
-
-    # - name: Verify services & ingress
-    #   run: |
-    #     kubectl get pods,svc,ingress -n ${{ env.K8S_NAMESPACE }}
+    - name: Verify services & ingress
+      run: |
+        kubectl get pods,svc,ingress -n ${{ env.K8S_NAMESPACE }}
 
     - name: Create namespace if not exists
       run: |
