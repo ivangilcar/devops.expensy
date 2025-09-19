@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-pod
+  name: frontend-deployment
   namespace: devops-expensy
 spec:
   replicas: 1
