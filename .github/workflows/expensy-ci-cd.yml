@@ -175,7 +175,6 @@ jobs:
         kubectl apply -f K8s/backend-service.yaml -n ${{ env.K8S_NAMESPACE }}
         kubectl apply -f K8s/frontend-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
         kubectl apply -f K8s/frontend-service.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f K8s/ingress-nginx-lb.yaml -n ${{ env.K8S_NAMESPACE }}
         kubectl apply -f K8s/expensy-ingress.yaml -n ${{ env.K8S_NAMESPACE }}
 
     - name: Wait for deployments to be ready
