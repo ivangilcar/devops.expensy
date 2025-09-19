@@ -166,7 +166,6 @@ jobs:
     - name: Deploy all Kubernetes manifests
       run: |
         # Apply all manifests in order (namespace first, then others)
-        kubectl apply -f k8s/namespace.yaml
         kubectl apply -f k8s/mongo-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
         kubectl apply -f k8s/mongo-service.yaml -n ${{ env.K8S_NAMESPACE }}
         kubectl apply -f k8s/redis-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
