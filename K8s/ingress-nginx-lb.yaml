@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ingress-nginx-lb
-  namespace: ingress-nginx  # el namespace donde está tu Ingress Controller
+  namespace: devops-expensy  # el namespace donde está tu Ingress Controller
 spec:
   type: LoadBalancer
   selector:
