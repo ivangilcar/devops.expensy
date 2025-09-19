@@ -11,15 +11,18 @@ on:
     branches: [ main ]
 
 env:
-  IMAGE_NAME_BACKEND: 160180/devopsexpensy_backend:latest
-  IMAGE_NAME_FRONTEND: 160180/expensy_frontend:v1.0.0
+  IMAGE_NAME_BACKEND: 160180/devopsexpensy_backend
+  IMAGE_NAME_FRONTEND: 160180/expensy_frontend
   K8S_NAMESPACE: devops-expensy
 
 jobs:
-  # CI PHASE: Build, Test and Push Images
   ci-phase:
     runs-on: ubuntu-latest
     
+    outputs:
+      backend_tag: ${{ steps.meta.outputs.backend_tag }}
+      frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -33,48 +36,40 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-    # Backend Build and Test
-    - name: Build Backend Docker image
+    - name: Define image tags
+      id: meta
+      run: |
+        echo "backend_tag=${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+        echo "frontend_tag=${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+    # Build Backend
+    - name: Build & Push Backend
       uses: docker/build-push-action@v5
       with:
         context: ./expensy_backend
+        push: true
         tags: |
+          ${{ steps.meta.outputs.backend_tag }}
           ${{ env.IMAGE_NAME_BACKEND }}:latest
-          ${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
 
+    # Run Backend tests
     - name: Run Backend tests
-      run: |
-        docker run --rm ${{ env.IMAGE_NAME_BACKEND }}:latest npm test --if-present
+      run: docker run --rm ${{ steps.meta.outputs.backend_tag }} npm test --if-present
 
-    # Frontend Build and Test  
-    - name: Build Frontend Docker image
+    # Build Frontend
+    - name: Build & Push Frontend
       uses: docker/build-push-action@v5
       with:
         context: ./expensy_frontend
+        push: true
         tags: |
+          ${{ steps.meta.outputs.frontend_tag }}
           ${{ env.IMAGE_NAME_FRONTEND }}:latest
-          ${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
 
+    # Run Frontend tests
     - name: Run Frontend tests
-      run: |
-        docker run --rm ${{ env.IMAGE_NAME_FRONTEND }}:latest npm test --if-present
+      run: docker run --rm ${{ steps.meta.outputs.frontend_tag }} npm test --if-present
 
-    # Push images to Docker Hub
-    - name: Push Backend to Docker Hub
-      run: |
-        docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
-        docker push ${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
-
-    - name: Push Frontend to Docker Hub
-      run: |
-        docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
-        docker push ${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
-
-  # CD PHASE: Deploy to Kubernetes (only on main branch)
   cd-phase:
     runs-on: ubuntu-latest
     needs: ci-phase
@@ -89,44 +84,27 @@ jobs:
       with:
         version: 'latest'
 
-    - name: Set up K8s context
+    - name: Configure K8s context
       run: |
         mkdir -p ~/.kube
         echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
         chmod 600 ~/.kube/config
 
-    - name: Update image tags in manifests
+    - name: Deploy Backend
       run: |
-        # Update backend image tag
-        sed -i "s|image:.*backend.*|image: ${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|" k8s/backend-deployment.yaml
-        
-        # Update frontend image tag  
-        sed -i "s|image:.*frontend.*|image: ${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}|" k8s/frontend-deployment.yaml
-        
-        echo "Updated image tags:"
-        grep "image:" k8s/*deployment.yaml
-
-    - name: Apply K8s manifests
-      run: |
-        kubectl apply -f k8s/ -n ${{ env.K8S_NAMESPACE }}
-
-    - name: Verify backend rollout
-      run: |
+        kubectl set image deployment/backend-pod backend=${{ needs.ci-phase.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/backend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    - name: Verify frontend rollout
+    - name: Deploy Frontend
       run: |
+        kubectl set image deployment/frontend-pod frontend=${{ needs.ci-phase.outputs.frontend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/frontend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    - name: Verify services
+    - name: Verify services & ingress
       run: |
-        kubectl get pods -n ${{ env.K8S_NAMESPACE }}
-        kubectl get services -n ${{ env.K8S_NAMESPACE }}
-        kubectl get ingress -n ${{ env.K8S_NAMESPACE }}
+        kubectl get pods,svc,ingress -n ${{ env.K8S_NAMESPACE }}
 
     - name: Health check
       run: |
-        # Wait for pods to be ready
-        kubectl wait --for=condition=ready pod -l app=backend -n ${{ env.K8S_NAMESPACE }} --timeout=180s
-        kubectl wait --for=condition=ready pod -l app=frontend -n ${{ env.K8S_NAMESPACE }} --timeout=180s
-        echo "✅ All pods are ready!"
+        sleep 20
+        curl -f http://your-ingress-domain.com || exit 1
