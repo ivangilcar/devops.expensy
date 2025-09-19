@@ -7,7 +7,7 @@ on:
     paths:
       - 'expensy_backend/**'
       - 'expensy_frontend/**'
-      - 'k8s/**'
+      - 'K8s/**'
   pull_request:
     branches: [main]
 
@@ -166,16 +166,17 @@ jobs:
     - name: Deploy all Kubernetes manifests
       run: |
         # Apply all manifests in order (namespace first, then others)
-        kubectl apply -f k8s/mongo-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/mongo-service.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/redis-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/redis-service.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/backend-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/backend-service.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/frontend-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/frontend-service.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/ingress-nginx-lb.yaml -n ${{ env.K8S_NAMESPACE }}
-        kubectl apply -f k8s/expensy-ingress.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/namespace.yaml
+        kubectl apply -f K8s/mongo-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/mongo-service.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/redis-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/redis-service.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/backend-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/backend-service.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/frontend-deployment.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/frontend-service.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/ingress-nginx-lb.yaml -n ${{ env.K8S_NAMESPACE }}
+        kubectl apply -f K8s/expensy-ingress.yaml -n ${{ env.K8S_NAMESPACE }}
 
     - name: Wait for deployments to be ready
       run: |
