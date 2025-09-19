@@ -127,14 +127,14 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    - name: Deploy Backend
+    # kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
+    - name: Refresh Cache Backend
       run: |
-        kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/backend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    - name: Deploy Frontend
+    # kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
+    - name: Refresh Cache Frontend
       run: |
-        kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/frontend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
     - name: Verify services & ingress
