@@ -1,53 +1,52 @@
-# .github/workflows/ci.yml
-name: CI - Expensy
+# name: CI - Expensy
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
 
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+# jobs:
+#   build-and-test:
+#     runs-on: ubuntu-latest
 
-    env:
-      # Replace <your-dockerhub-username> with your actual Docker Hub username
-      IMAGE_NAME_BACKEND: 160180/devopsexpensy_backend:latest
-      IMAGE_NAME_FRONTEND: 160180/expensy_frontend:v1.0.0
+#     env:
+#       # Replace <your-dockerhub-username> with your actual Docker Hub username
+#       IMAGE_NAME_BACKEND: 160180/devopsexpensy_backend:latest
+#       IMAGE_NAME_FRONTEND: 160180/expensy_frontend:v1.0.0
 
-    steps:
-      # Step 1: Checkout repository code
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       # Step 1: Checkout repository code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      # Step 2: Log in to Docker Hub using GitHub secrets
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+#       # Step 2: Log in to Docker Hub using GitHub secrets
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-      # Step 3: Build and push backend Docker image
-      - name: Build backend Docker image
-        run: |
-          docker build -t $IMAGE_NAME_BACKEND ./expensy_backend
-          docker push $IMAGE_NAME_BACKEND
+#       # Step 3: Build and push backend Docker image
+#       - name: Build backend Docker image
+#         run: |
+#           docker build -t $IMAGE_NAME_BACKEND ./expensy_backend
+#           docker push $IMAGE_NAME_BACKEND
 
-      # Step 4: Build and push frontend Docker image
-      - name: Build frontend Docker image
-        run: |
-          docker build -t $IMAGE_NAME_FRONTEND ./expensy_frontend
-          docker push $IMAGE_NAME_FRONTEND
+#       # Step 4: Build and push frontend Docker image
+#       - name: Build frontend Docker image
+#         run: |
+#           docker build -t $IMAGE_NAME_FRONTEND ./expensy_frontend
+#           docker push $IMAGE_NAME_FRONTEND
 
-      # Step 5: Run backend tests (inside container)
-      - name: Run backend tests
-        run: |
-          docker run --rm $IMAGE_NAME_BACKEND npm test
+#       # Step 5: Run backend tests (inside container)
+#       - name: Run backend tests
+#         run: |
+#           docker run --rm $IMAGE_NAME_BACKEND npm test
 
-      # Step 6: Run frontend tests (inside container)
-      - name: Run frontend tests
-        run: |
-          docker run --rm $IMAGE_NAME_FRONTEND npm test
+#       # Step 6: Run frontend tests (inside container)
+#       - name: Run frontend tests
+#         run: |
+#           docker run --rm $IMAGE_NAME_FRONTEND npm test

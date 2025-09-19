@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
+  name: backend-pod
   namespace: devops-expensy
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: backend
@@ -22,5 +22,9 @@ spec:
           env:
             - name: DATABASE_URI
               value: "mongodb://root:example@mongo:27017"
-            - name: REDIS_URL
-              value: "redis://:someredispassword@redis:6379"
+            - name: REDIS_HOST      # ✅ NUEVA variable
+              value: "redis-service" # Nombre del servicio de Redis
+            - name: REDIS_PORT      # ✅ NUEVA variable  
+              value: "6379"         # Puerto de Redis
+            - name: REDIS_PASSWORD  # ✅ NUEVA variable
+              value: "someredispassword" # Password de Redis

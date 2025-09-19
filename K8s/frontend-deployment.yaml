@@ -22,3 +22,4 @@ spec:
           env:
             - name: NEXT_PUBLIC_API_URL
               value: "http://backend-service:8706"
+

@@ -1,48 +1,46 @@
-# .github/workflows/cd.yml
-name: CD - Expensy
+# name: CD - Expensy
 
-on:
-  push:
-    branches:
-      - main   # Trigger deployment only when pushing to main branch
+# on:
+#   push:
+#     branches:
+#       - main   # Trigger deployment only when pushing to main branch
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    env:
-      # Replace <your-dockerhub-username> with your actual Docker Hub username
-      IMAGE_NAME_BACKEND: 160180/expensy-backend
-      IMAGE_NAME_FRONTEND: 160180/expensy-frontend
-      K8S_NAMESPACE: devops-expensy
+#     env:
+#       # Replace <your-dockerhub-username> with your actual Docker Hub username
+#       IMAGE_NAME_BACKEND: 160180/expensy-backend
+#       IMAGE_NAME_FRONTEND: 160180/expensy-frontend
+#       K8S_NAMESPACE: devops-expensy
 
-    steps:
-      # Step 1: Checkout repository code
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       # Step 1: Checkout repository code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      # Step 2: Set up kubectl
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
+#       # Step 2: Set up kubectl
+#       - name: Set up kubectl
+#         uses: azure/setup-kubectl@v3
+#         with:
+#           version: 'latest'
 
-      # Step 3: Configure K8s credentials from GitHub Secret
-      # For example, if you are using kubeconfig saved as a GitHub secret
-      - name: Set up K8s context
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+#       # Step 3: Configure K8s credentials from GitHub Secret
+#       # For example, if you are using kubeconfig saved as a GitHub secret
+#       - name: Set up K8s context
+#         run: |
+#           mkdir -p ~/.kube
+#           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
 
-      # Step 4: Deploy manifests to Kubernetes
-      - name: Apply K8s manifests
-        run: |
-          kubectl apply -n $K8S_NAMESPACE -f ./k8s
+#       # Step 4: Deploy manifests to Kubernetes
+#       - name: Apply K8s manifests
+#         run: |
+#           kubectl apply -n $K8S_NAMESPACE -f ./k8s
 
-      # Step 5: Verify rollout status
-      - name: Verify backend rollout
-        run: kubectl rollout status deployment/backend-deployment -n $K8S_NAMESPACE
+#       # Step 5: Verify rollout status
+#       - name: Verify backend rollout
+#         run: kubectl rollout status deployment/backend-deployment -n $K8S_NAMESPACE
 
-      - name: Verify frontend rollout
-        run: kubectl rollout status deployment/frontend-deployment -n $K8S_NAMESPACE
-
+#       - name: Verify frontend rollout
+#         run: kubectl rollout status deployment/frontend-deployment -n $K8S_NAMESPACE
