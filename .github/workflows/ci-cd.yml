@@ -16,9 +16,46 @@ env:
   K8S_NAMESPACE: devops-expensy
 
 jobs:
-  ci-phase:
+  build:
     runs-on: ubuntu-latest
-    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Backend Build
+    - name: Install backend dependencies
+      run: |
+        cd expensy_backend
+        npm install
+        npm run build
+
+    # Frontend Build
+    - name: Install frontend dependencies
+      run: |
+        cd expensy_frontend
+        npm install
+        npm run build
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run backend tests
+      run: |
+        cd expensy_backend
+        npm test --if-present
+
+    - name: Run frontend tests
+      run: |
+        cd expensy_frontend
+        npm test --if-present
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
     outputs:
       backend_tag: ${{ steps.meta.outputs.backend_tag }}
       frontend_tag: ${{ steps.meta.outputs.frontend_tag }}
@@ -26,9 +63,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -42,39 +76,24 @@ jobs:
         echo "backend_tag=${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
         echo "frontend_tag=${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-    # Build Backend
     - name: Build & Push Backend
-      uses: docker/build-push-action@v5
-      with:
-        context: ./expensy_backend
-        push: true
-        tags: |
-          ${{ steps.meta.outputs.backend_tag }}
-          ${{ env.IMAGE_NAME_BACKEND }}:latest
+      run: |
+        docker build -t ${{ steps.meta.outputs.backend_tag }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest ./expensy_backend
+        docker push ${{ steps.meta.outputs.backend_tag }}
+        docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
 
-    # Run Backend tests
-    - name: Run Backend tests
-      run: docker run --rm ${{ steps.meta.outputs.backend_tag }} npm test --if-present
-
-    # Build Frontend
     - name: Build & Push Frontend
-      uses: docker/build-push-action@v5
-      with:
-        context: ./expensy_frontend
-        push: true
-        tags: |
-          ${{ steps.meta.outputs.frontend_tag }}
-          ${{ env.IMAGE_NAME_FRONTEND }}:latest
+      run: |
+        docker build -t ${{ steps.meta.outputs.frontend_tag }} -t ${{ env.IMAGE_NAME_FRONTEND }}:latest ./expensy_frontend
+        docker push ${{ steps.meta.outputs.frontend_tag }}
+        docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
 
-    # Run Frontend tests
-    - name: Run Frontend tests
-      run: docker run --rm ${{ steps.meta.outputs.frontend_tag }} npm test --if-present
-
-  cd-phase:
+  deploy:
     runs-on: ubuntu-latest
-    needs: ci-phase
-    if: github.ref == 'refs/heads/main'
-    
+    needs: docker
+    environment:
+      name: production
+      url: http://expensy.ivanp3.com/
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -92,12 +111,12 @@ jobs:
 
     - name: Deploy Backend
       run: |
-        kubectl set image deployment/backend-pod backend=${{ needs.ci-phase.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
+        kubectl set image deployment/backend-pod backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/backend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
     - name: Deploy Frontend
       run: |
-        kubectl set image deployment/frontend-pod frontend=${{ needs.ci-phase.outputs.frontend_tag }} -n ${{ env.K8S_NAMESPACE }}
+        kubectl set image deployment/frontend-pod frontend=${{ needs.docker.outputs.frontend_tag }} -n ${{ env.K8S_NAMESPACE }}
         kubectl rollout status deployment/frontend-pod -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
     - name: Verify services & ingress
@@ -107,4 +126,4 @@ jobs:
     - name: Health check
       run: |
         sleep 20
-        curl -f http://your-ingress-domain.com || exit 1
+        curl -f http://expensy.ivanp3.com/ || exit 1
