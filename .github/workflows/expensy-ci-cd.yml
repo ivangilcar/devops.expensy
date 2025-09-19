@@ -121,8 +121,6 @@ jobs:
           exit 1
         fi
         chmod 600 ~/.kube/config
-        kubectl config use-context ${{ secrets.K8S_CONTEXT || 'default' }}
-        kubectl cluster-info
 
     - name: Deploy Backend
       run: |
