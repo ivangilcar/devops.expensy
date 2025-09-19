@@ -130,12 +130,12 @@ jobs:
     # kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
     - name: Refresh Cache Backend
       run: |
-        kubectl rollout status deployment/backend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+        kubectl rollout restart deployment/backend-deployment -n ${{ env.K8S_NAMESPACE }}
 
     # kubectl set image deployment/backend-deployment backend=${{ needs.docker.outputs.backend_tag }} -n ${{ env.K8S_NAMESPACE }}
     - name: Refresh Cache Frontend
       run: |
-        kubectl rollout status deployment/frontend-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+        kubectl rollout restart deployment/frontend-deployment -n ${{ env.K8S_NAMESPACE }}
 
     - name: Verify services & ingress
       run: |
