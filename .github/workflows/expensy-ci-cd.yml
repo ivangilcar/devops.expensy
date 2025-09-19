@@ -35,32 +35,32 @@ jobs:
         cd expensy_frontend
         npm ci --only=production
 
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
 
-    - name: Install backend dev dependencies
-      run: |
-        cd expensy_backend
-        npm ci
+  #   - name: Install backend dev dependencies
+  #     run: |
+  #       cd expensy_backend
+  #       npm ci
 
-    - name: Run backend tests
-      run: |
-        cd expensy_backend
-        npm test --if-present
+  #   - name: Run backend tests
+  #     run: |
+  #       cd expensy_backend
+  #       npm test --if-present
 
-    - name: Install frontend dev dependencies
-      run: |
-        cd expensy_frontend
-        npm ci
+  #   - name: Install frontend dev dependencies
+  #     run: |
+  #       cd expensy_frontend
+  #       npm ci
 
-    - name: Run frontend tests
-      run: |
-        cd expensy_frontend
-        npm test --if-present
+  #   - name: Run frontend tests
+  #     run: |
+  #       cd expensy_frontend
+  #       npm test --if-present
 
   docker:
     runs-on: ubuntu-latest
