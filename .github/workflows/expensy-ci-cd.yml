@@ -22,7 +22,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # Backend Build
+    # Backend Build - Diogo Test
     - name: Install backend dependencies
       run: |
         cd expensy_backend
